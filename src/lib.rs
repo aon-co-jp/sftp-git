@@ -4,3 +4,4 @@
 //! 各機能は独立したモジュールとして1つずつ実装・テストしていく方針。
 
 pub mod drift;
+pub mod versionless_api;

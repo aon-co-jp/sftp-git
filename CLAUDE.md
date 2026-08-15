@@ -386,8 +386,28 @@ Content-Length方式)で直接送信・検証**する方式で自動E2E確認を
 エントリに記録)。sftp-git側は**CPU専用ビルドを使うことで回避**——
 根本原因の特定はaruaru-llm側の今後の課題として切り出した。
 
-- 次にすべきこと: (1) APIキー疎通確認(Claudeのキーファイル待ち、
-  OpenAIログイン問題は保留中のまま)、(2) マルチプラットフォーム
-  展開の次段階、(3) より豊かなUI(Webview等)への発展の検討、
-  (4) aruaru-llm側`real-vulkan`のGPU配線失敗バグの根本原因調査
-  (aruaru-llm側の課題として切り出し済み)。
+## 追記(同セッション) Claude(Anthropic) APIキー疎通確認完了
+
+ユーザーから`ANTHROPIC_API_KEY`をファイル経由(`.secrets/ai_keys.env.txt`、
+リポジトリ外)で受け取り、`AiProviderClient::complete`と同じHTTP
+リクエスト形状で実疎通確認を実施。**正直な事故の記録**: 確認手順の
+初期段階で、シェルコマンドのエラー出力・`head`コマンドの誤用により
+**キーの一部がツール出力に2回露出した**——都度ユーザーへ即座に報告し
+失効・再発行を依頼、以降は値を一切標準出力へ出さない方式
+(`$(cat file)`での変数代入のみ、echo/printを一切使わない)に切り替えて
+再検証した。
+
+**結果**: **認証自体は成功**(HTTP 400、`invalid_request_error`で
+「クレジット残高不足」というAnthropic側の課金起因のエラーメッセージが
+返った——APIキーの形式・`x-api-key`/`anthropic-version`ヘッダの
+組み立て方は正しいことが実証された)。`src/ai_providers.rs`の
+Claude実装コード自体に問題は無い。**クレジットチャージは決済行為
+のため対応不可**、ユーザー自身がAnthropic Console
+(https://console.anthropic.com/settings/billing)で行う必要がある。
+
+- 次にすべきこと: (1) Anthropicアカウントへのクレジットチャージ後、
+  再度疎通確認(コード変更は不要、クレジット追加のみで動作するはず)。
+  (2) ChatGPT/Gemini/DeepSeek/Grokの疎通確認(いずれも未着手のまま)。
+  (3) マルチプラットフォーム展開の次段階。(4) より豊かなUI
+  (Webview等)への発展の検討。(5) aruaru-llm側`real-vulkan`のGPU配線
+  失敗バグの根本原因調査(aruaru-llm側の課題として切り出し済み)。

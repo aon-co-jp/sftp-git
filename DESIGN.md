@@ -62,7 +62,24 @@ Stripe方式(現行の正規実装+過去バージョンへの変換トランス
 生成させる。所見はあくまで参考情報であり、削除コマンドの実行権限は
 作業者のみが持つ(READMEに明記済みの誤削除防止方針)。
 
-## 4. open_raid_z_core(HWアクセラレーション暗号化・圧縮)
+## 4. フルバックアップ: aruaru-db + PostgreSQL DUAL DATABASE
+
+**方針(ユーザー指定、2026-08-15)**: 基本のバックアップ先は
+[aruaru-db](https://github.com/aon-co-jp/aruaru-db)。希望する場合は
+PostgreSQLを追加し、**DUAL DATABASE構成**にする。
+
+- 通常時は両DBへ同一内容を書き込む(冗長化)。
+- 片側(aruaru-db or PostgreSQL)に障害が発生した場合、もう片側が
+  フルに補完・サポートする(読み書きを継続できる)。
+- どちらかを主・従に固定するのか、常時対等な二重書き込みにするのかは
+  未確定。障害検知・復旧後の再同期(片方が止まっていた間の差分をどう
+  埋め戻すか)の方式も未設計。
+
+**未解決点**: DUAL DATABASE時の整合性モデル(強整合 or 結果整合)、
+復旧後の再同期方式、aruaru-db/PostgreSQL双方への書き込みをどの層
+(アプリ層 or DBプロキシ層)で行うか。
+
+## 5. open_raid_z_core(HWアクセラレーション暗号化・圧縮)
 
 **未着手**。フルバックアップ(aruaru-db+PostgreSQL+RPoem)を
 `open_raid_z_core`で暗号化・圧縮する際の依存追加方法・APIは

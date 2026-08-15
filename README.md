@@ -21,8 +21,10 @@ WEBサイト開発者向けに、**SFTPアップロードとGit管理**を統合
   (参照されているか、最終更新からの経過、コミット履歴上の扱われ方等)
   を示して作業者の判断を支援する。**最終的な削除実行は作業者の承認を
   必須とし、AIが自動で削除する設計にはしない**(誤削除リスクのため)。
-- **フルバックアップ**: [aruaru-db](https://github.com/aon-co-jp/aruaru-db)
-  +PostgreSQLをベースに、Rust+[RPoem](https://github.com/aon-co-jp/RPoem)
+- **フルバックアップ**: 基本は[aruaru-db](https://github.com/aon-co-jp/aruaru-db)。
+  希望に応じてPostgreSQLも追加し、**DUAL DATABASE構成**(片側に
+  不具合が発生してももう片側がフル補完・サポートする冗長構成)を
+  選択可能にする。Rust+[RPoem](https://github.com/aon-co-jp/RPoem)
   で機能追加。
 - **ハードウェアアクセラレーション**: 調査の結果、暗号化・圧縮・展開の
   高速化には[open-raid-z](https://github.com/aon-co-jp/open-raid-z)の

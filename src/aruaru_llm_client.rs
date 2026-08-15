@@ -76,9 +76,31 @@ impl AruaruLlmClient {
     }
 
     /// 差分をaruaru-llmに解析させ、日英アドバイスを取得する。
-    /// `ai_diff_advisor`のプロンプト組み立て・レスポンス解析ロジックを
-    /// 実HTTP呼び出しに配線する。
+    /// 2026-08-15実機検証で判明した通り、1回の呼び出しで「見出し付き
+    /// 日英両方」の形式指定に従わせる方式(旧`analyze_diff_single_call`)
+    /// は指示追従非対応の小型GPT-2系モデルでは実用に耐えないため、
+    /// **日本語用・英語用に別プロンプトで2回呼び出す**方式を既定とする。
     pub async fn analyze_diff(
+        &self,
+        file_path: &str,
+        diff_text: &str,
+    ) -> Result<crate::ai_diff_advisor::BilingualAdvice, AruaruLlmError> {
+        use crate::ai_diff_advisor::{build_prompt_en, build_prompt_ja, BilingualAdvice};
+
+        let ja_prompt = build_prompt_ja(file_path, diff_text);
+        let en_prompt = build_prompt_en(file_path, diff_text);
+
+        let (japanese, english) = tokio::try_join!(self.chat(&ja_prompt), self.chat(&en_prompt))?;
+
+        Ok(BilingualAdvice {
+            japanese: japanese.trim().to_string(),
+            english: english.trim().to_string(),
+        })
+    }
+
+    /// 旧方式(1回呼び出し+見出しパース)。後方互換のため残すが、
+    /// 指示追従非対応モデルでは失敗しやすいため`analyze_diff`を推奨する。
+    pub async fn analyze_diff_single_call(
         &self,
         file_path: &str,
         diff_text: &str,

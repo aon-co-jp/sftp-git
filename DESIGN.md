@@ -196,9 +196,37 @@ Tauri互換のデスクトップアプリ実装もNode非依存で保有)。
 - 出典: Toshiba SQBM+技術ページ、東芝VLSIsympo23論文、
   DeepSeek-V3 Technical Report(arXiv)、DeepSeek-V3公式GitHub。
 
+## 9a. aruaru-llmのCPU/GPU/NPU活用状況の調査(2026-08-15)
+
+ユーザー指示「aruaru-llmはCPU+システムメモリ+GPU+NPU全体を活かすように
+して(今のPCにはNPUは無い)」を受けて`aruaru-llm/src/main.rs`を調査。
+
+- **既に実装済み**: `opencuda_core::GpuDevice`トレイトによる
+  CPU/GPUデバイス抽象化がある。既定では`opencuda_vulkan::real::
+  VulkanDevice::new(0)`を試み、失敗時は`CpuDevice::new(0)`
+  (全論理コアへ並列ディスパッチ)へ自動フォールバックする設計。
+  「CPU+システムメモリ+GPU全体を活かす」という要求は、この既存の
+  デバイス抽象化により既におおむね満たされている。
+- **NPU**: 現在のPCにNPUが無いとユーザー自身が明言しているため、
+  実装しても実機検証ができない。`GpuDevice`トレイトへ`NpuDevice`
+  実装を追加すること自体は将来の拡張ポイントとして設計上可能だが、
+  **実ハードウェアが無い状態での実装は動作未検証のまま放置される
+  リスクが高く、今回は見送る**。NPU搭載機が用意でき次第、
+  `opencuda_core::GpuDevice`の新規実装として着手するのが筋が良い
+  (このsftp-gitリポジトリではなく`open-cuda`/`aruaru-llm`側の作業)。
+
 ## 9. AI差分解析: モデル切り替えの実測結果(2026-08-15)
 
 `ai_diff_advisor`の日英2セクション形式パースが、`distilgpt2`
 (82M、指示追従非対応)では失敗することが実E2Eテストで判明したため
 (CLAUDE.md参照)、aruaru-llm側で稼働中モデルを`gpt2-medium`
-(355M)へ切り替えて再テストした。結果は次回HANDOFFへ追記する。
+(355M)へ切り替えて再テストした。
+
+**結果: `gpt2-medium`でも330秒かけて失敗**(`MissingJapaneseSection`)。
+モデルサイズを上げるだけでは指示追従の問題は解決しないと確認できた
+(GPT-2ファミリーはいずれもinstruction-tuned版ではないため)。この
+実測結果を受けて、`ai_diff_advisor`に`build_prompt_ja`/
+`build_prompt_en`(言語ごとに別プロンプトで2回呼び出す方式)を追加し、
+`aruaru_llm_client::analyze_diff`をこちらへ切り替えた
+(見出しパースに依存しないため原理的に失敗しない)。詳細は
+`src/ai_diff_advisor.rs`冒頭のコメント参照。

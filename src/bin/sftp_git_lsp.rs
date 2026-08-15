@@ -12,7 +12,7 @@
 use lsp_server::{Connection, Message, Request, RequestId, Response};
 use lsp_types::{InitializeParams, ServerCapabilities};
 use serde::{Deserialize, Serialize};
-use sftp_git::ai_diff_advisor::{build_prompt, parse_response};
+use sftp_git::ai_diff_advisor::build_prompt;
 use sftp_git::aruaru_llm_client::AruaruLlmClient;
 use sftp_git::cleanup_advisor::{advise, FileSignals};
 use sftp_git::drift::{detect_drift, Manifest};
@@ -235,26 +235,18 @@ fn handle_request(
                 Err((id, msg)) => return send_invalid_params(connection, id, msg),
             };
             let client = AruaruLlmClient::new(params.aruaru_llm_base_url);
-            let outcome = runtime.block_on(async {
-                let prompt = build_prompt(&params.file_path, &params.diff_text);
-                let raw = client.chat(&prompt).await;
-                raw.map(|r| parse_response(&r))
-            });
+            // 2026-08-15実機検証の結果、日英を1回で見出し分割させる方式は
+            // 指示追従非対応の小型GPT-2系モデルでは失敗するため、
+            // 言語ごとに別プロンプトで2回呼び出す`analyze_diff`を使う。
+            let outcome =
+                runtime.block_on(client.analyze_diff(&params.file_path, &params.diff_text));
             match outcome {
-                Ok(Ok(advice)) => {
+                Ok(advice) => {
                     let result = AnalyzeDiffResult {
                         japanese: advice.japanese,
                         english: advice.english,
                     };
                     let response = Response::new_ok(id, serde_json::to_value(result)?);
-                    connection.sender.send(Message::Response(response))?;
-                }
-                Ok(Err(parse_err)) => {
-                    let response = Response::new_err(
-                        id,
-                        lsp_server::ErrorCode::InternalError as i32,
-                        format!("aruaru-llm応答の解析に失敗: {parse_err:?}"),
-                    );
                     connection.sender.send(Message::Response(response))?;
                 }
                 Err(client_err) => {

@@ -1,9 +1,14 @@
-//! テスト/本番差分のAIチェック+日英アドバイス。DESIGN.md「5.」参照。
+//! テスト/本番差分のAIチェック+日英アドバイス。DESIGN.md「5.」「9.」参照。
 //!
-//! aruaru-llmの`/v1/chat`または`/v1/generate`へ渡すプロンプトの組み立てと、
-//! レスポンスのパース(日本語アドバイス・英語アドバイスへの分離)を行う。
-//! 実際のHTTP呼び出しは未接続(次回、aruaru-llmクライアント実装と合わせて
-//! 行う)。ここでは呼び出し前後のロジックのみを実装・テストする。
+//! **2026-08-15実機検証での発見**: `build_prompt`+`parse_response`
+//! (1回の呼び出しで日英2見出し付き出力を要求する方式)は、
+//! `distilgpt2`(82M)でも`gpt2-medium`(355M、330秒かけて実行)でも
+//! 失敗した。GPT-2ファミリーは指示追従(instruction-tuned)されて
+//! いないため、モデルを大きくするだけでは形式指定への追従は改善しない。
+//! この教訓を受け、`build_prompt_ja`/`build_prompt_en`で**言語ごとに
+//! 別々のプロンプトを組み立て2回呼び出す**方式を追加した(こちらが
+//! 現在の推奨方式)。旧方式(`build_prompt`/`parse_response`)は後方互換
+//! として残すが、実運用では新方式を使うこと。
 
 const JA_MARKER: &str = "### 日本語アドバイス";
 const EN_MARKER: &str = "### English Advice";
@@ -61,6 +66,28 @@ pub fn parse_response(raw: &str) -> Result<BilingualAdvice, ParseError> {
     Ok(BilingualAdvice { japanese, english })
 }
 
+/// 日本語アドバイス用のプロンプト(2回呼び出し方式、推奨)。
+/// 形式指定(見出し等)を要求せず、日本語で書き始めさせるプライミングの
+/// みに頼ることで、指示追従非対応の小型モデルでも壊れにくくする。
+pub fn build_prompt_ja(file_path: &str, diff_text: &str) -> String {
+    format!(
+        "ファイル`{path}`のテスト/本番差分について、問題点や改善案を\
+         日本語で簡潔に述べます。\n\n--- diff ---\n{diff}\n\n差分についての所見: ",
+        path = file_path,
+        diff = diff_text,
+    )
+}
+
+/// 英語アドバイス用のプロンプト(2回呼び出し方式、推奨)。
+pub fn build_prompt_en(file_path: &str, diff_text: &str) -> String {
+    format!(
+        "Here is a brief review of the test/production diff for file `{path}`.\n\n\
+         --- diff ---\n{diff}\n\nObservation: ",
+        path = file_path,
+        diff = diff_text,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -102,5 +129,21 @@ mod tests {
             parse_response(&raw).unwrap_err(),
             ParseError::MissingEnglishSection
         );
+    }
+
+    #[test]
+    fn build_prompt_ja_includes_path_and_diff_and_is_japanese_primed() {
+        let prompt = build_prompt_ja("index.html", "-old\n+new");
+        assert!(prompt.contains("index.html"));
+        assert!(prompt.contains("-old\n+new"));
+        assert!(prompt.contains("日本語"));
+    }
+
+    #[test]
+    fn build_prompt_en_includes_path_and_diff_and_is_english_primed() {
+        let prompt = build_prompt_en("index.html", "-old\n+new");
+        assert!(prompt.contains("index.html"));
+        assert!(prompt.contains("-old\n+new"));
+        assert!(prompt.contains("Observation"));
     }
 }

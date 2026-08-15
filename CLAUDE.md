@@ -363,7 +363,31 @@ RustJSON(`open-runo-rustjson`)自体が「値モデルとして
 (拡張ホストの起動・LSPサーバーのspawnまでの確認に留まる)——次回、
 実際にVS Code UIを操作してのE2E確認が望ましい。
 
-- 次にすべきこと: (1) 各コマンドの実際のクリック操作によるE2E確認、
-  (2) APIキー疎通確認(OpenAIログイン問題は保留中のまま)、
-  (3) マルチプラットフォーム展開の次段階、(4) より豊かなUI
-  (Webview等)への発展の検討。
+## 追記(再開セッション、2026-08-15) LSPプロトコル経由の自動E2E確認+実バグ発見
+
+ユーザー指示「各コマンドを実際にクリックしてダイアログ入力→結果表示
+までのE2E確認…これだけは完成させて」への対応。VS Code UIの手動クリック
+操作の代わりに、拡張機能(`extension.ts`)が実際に送るのと**全く同じ
+LSPカスタムリクエストを、Node.jsスクリプトで標準入出力経由(LSP標準の
+Content-Length方式)で直接送信・検証**する方式で自動E2E確認を実施した
+(`vscode-extension/e2e-test.js`+`e2e-test-analyze-diff.js`)。
+
+**結果**: `cleanupAdvice`/`detectDrift`/`versionlessResolve`/
+`dualDatabaseState`系3リクエスト/`buildDiffPrompt`の6リクエストは
+全て期待通りの応答を確認。`analyzeDiff`は実aruaru-llmサーバー
+(CPU専用ビルド)に対して実際に呼び出し、日英アドバイスが返ることを
+確認(内容は小型モデルの限界で文法崩壊・HTMLタグ混入と、こちらも
+正直な結果)。
+
+**副産物として実バグを発見**: `real-vulkan`ビルドのaruaru-llmへ
+同時並行で`/v1/generate`を2件送ると、DevicePoolがGPU側へ振り分けた
+リクエストが`no spirv bytes were provided`で失敗することを発見
+(詳細・対応は`F:\runo\aruaru-llm\CLAUDE.md`2026-08-15(続き2)
+エントリに記録)。sftp-git側は**CPU専用ビルドを使うことで回避**——
+根本原因の特定はaruaru-llm側の今後の課題として切り出した。
+
+- 次にすべきこと: (1) APIキー疎通確認(Claudeのキーファイル待ち、
+  OpenAIログイン問題は保留中のまま)、(2) マルチプラットフォーム
+  展開の次段階、(3) より豊かなUI(Webview等)への発展の検討、
+  (4) aruaru-llm側`real-vulkan`のGPU配線失敗バグの根本原因調査
+  (aruaru-llm側の課題として切り出し済み)。

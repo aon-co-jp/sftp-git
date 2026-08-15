@@ -1,2 +1,4 @@
 /target
 Cargo.lock
+vscode-extension/node_modules
+vscode-extension/out

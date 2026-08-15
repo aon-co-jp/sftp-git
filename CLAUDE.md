@@ -151,3 +151,42 @@ aruaru-llmによるテスト/本番差分AIチェック、aruaru-db+PostgreSQL�
     実DB接続・実SFTP接続へ配線する(現状は純粋ロジックのみ)。
     (2) RPoemのVersionlessAPI実装への実依存(path依存等)を追加する。
     (3) VS Code拡張のLSPサーバー化・Node製接続コードの実装に着手する。
+
+- **2026-08-15(続き) 実サービス配線+LSPサーバー化+VS Code拡張を実装**:
+  ユーザー指示「実配線して、実サービスへ接続する作業を行なって。
+  VS Code拡張のLSPサーバー化をして」を受けて以下を実装、
+  `cargo build`/`cargo test`(24 passed, 3 ignored)・
+  `npx tsc`(エラー無し)で確認済み:
+  - `src/aruaru_llm_client.rs`: aruaru-llm `/v1/chat`への実HTTP
+    クライアント(reqwest)。`ai_diff_advisor`のプロンプト組み立て/
+    レスポンス解析と接続。実サーバー要のテストは`#[ignore]`
+    (`ARUARU_LLM_BASE_URL`環境変数で手動実行)。
+  - `src/sftp_client.rs`: 実SFTPクライアント(ssh2crate、パスワード
+    認証)。`drift.rs`のマニフェスト突き合わせへ、本番サーバーの
+    実ファイルをSHA-256ハッシュ化して渡す。実サーバー要のテストは
+    `#[ignore]`。
+  - `src/dual_database_client.rs`: DUAL DATABASE実接続
+    (`tokio-postgres`)。**重要な発見**: aruaru-db(`aruaru-server`)は
+    PostgreSQLワイヤープロトコル互換ポート(`--pg-port`)を持つため、
+    aruaru-db/PostgreSQL両方に同じ`tokio-postgres`クライアントで
+    接続できる。`dual_database.rs`の状態遷移(平常時同期整合/
+    障害時フェイルオーバー)と組み合わせ、平常時は主系へ同期・
+    従系へ非同期(`tokio::spawn`)で書き込む実装。
+  - `src/bin/sftp_git_lsp.rs`: LSPサーバー本体(`lsp-server`/
+    `lsp-types`crate)。標準入出力でVS Code拡張と通信。現状は
+    カスタムリクエスト`sftpGit/cleanupAdvice`のみ配線(疎通確認優先、
+    残り4機能のLSPリクエスト化は次回)。
+  - `vscode-extension/`: Node製の薄い接続層のみ(`src/extension.ts`)。
+    `sftp_git_lsp`バイナリを子プロセス起動し`vscode-languageclient`で
+    中継するだけで、業務ロジックは一切持たない
+    (方針通りrust-analyzer方式を実現)。
+  - 追加した外部依存(実行時ネットワーク/DB接続が要るもの)は
+    reqwest・tokio・tokio-postgres・ssh2・sha2・lsp-server・lsp-types。
+  - 次にすべきこと: (1) 残り4機能(drift/versionless_api/
+    cleanup_advisor全体/dual_database/ai_diff_advisor)をLSP
+    カスタムリクエストとして追加配線。(2) VS Code拡張から実際に
+    LSPサーバーを起動してエンドツーエンドで動作確認(現時点では
+    ビルド・型チェックのみ、実機起動確認はまだ)。(3) RPoemの
+    VersionlessAPI実装への実依存はまだ未着手。(4) aruaru-db/
+    PostgreSQLへの実接続テストは実サーバーが無いため未実施
+    (`#[ignore]`のまま)。

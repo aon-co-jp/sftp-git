@@ -169,3 +169,36 @@ Tauri互換のデスクトップアプリ実装もNode非依存で保有)。
   段階1の後半(Rustコア側の5機能が一通り揃ってから)に着手する。
 - RPoemのVersionlessAPI実装をどう依存として取り込むか
   (path依存 or 別クレート化)は次回精査する。
+
+## 8. 東芝SBM・DeepSeek折りたたみ技術の調査結果(2026-08-15、ユーザー指定)
+
+ユーザー指示によりLLM推論高速化への活用可能性を日英で調査した。
+**正直な結論: 東芝SBMはLLM推論には統合しない(ユーザー確認済み、
+2026-08-15)**。
+
+- **東芝Simulated Bifurcation Machine(SBM)**: 組合せ最適化
+  (イジングモデル/QUBO形式)専用の疑似量子計算機。交通渋滞緩和・
+  金融ポートフォリオ最適化・創薬等が応用分野。GPT-2系のような
+  連続値の行列演算(注意機構・KVキャッシュ)とは問題構造が根本的に
+  異なり、**LLM/Transformer推論への応用を報告した論文・実装は
+  調査した範囲では見つからなかった**。技術的接続が無い、または
+  極めて投機的というのが正直な評価。
+  → **将来、別用途(組合せ最適化問題、例: デプロイ計画の最適化等)
+  での活用候補としてのみ記録し、LLM推論(dream-os/open-directx/
+  open-cuda/aruaru-llm)へは統合しない**(ユーザー確認済み)。
+- **DeepSeek「折りたたみ技術」= Multi-head Latent Attention(MLA)**:
+  KVキャッシュを低ランク潜在空間へ圧縮する技術。**既に
+  open-cuda/aruaru-llmに実装済み**(`enable_mla_kv_compression`、
+  PCA較正版含む、2026-08-08 HANDOFF参照)。ランダム初期化版は
+  品質劣化が実測確認されており既定off。「発展」の余地があるとすれば
+  実際のfine-tuningによる射影行列の学習だが、これは大きな追加学習
+  コストを伴うため未着手のまま。
+- 出典: Toshiba SQBM+技術ページ、東芝VLSIsympo23論文、
+  DeepSeek-V3 Technical Report(arXiv)、DeepSeek-V3公式GitHub。
+
+## 9. AI差分解析: モデル切り替えの実測結果(2026-08-15)
+
+`ai_diff_advisor`の日英2セクション形式パースが、`distilgpt2`
+(82M、指示追従非対応)では失敗することが実E2Eテストで判明したため
+(CLAUDE.md参照)、aruaru-llm側で稼働中モデルを`gpt2-medium`
+(355M)へ切り替えて再テストした。結果は次回HANDOFFへ追記する。

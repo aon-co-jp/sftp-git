@@ -126,3 +126,28 @@ aruaru-llmによるテスト/本番差分AIチェック、aruaru-db+PostgreSQL�
     段階1の検証スコープ(DESIGN.md 1〜5節のうちどこまで含めるか)の
     絞り込み、の2点を詰める必要がある。実装コードはまだ一切無い
     (このリポジトリはCargo雛形+設計ドキュメントのみ)。
+
+- **2026-08-15(続き) Node不使用方針への転換+5機能を実装・全テスト
+  通過**: ユーザー指定「Rustは使うがNodeは使わずRPoemで実装」を受け、
+  rust-analyzer方式(業務ロジックは全てRust製LSPサーバー、VS Code側は
+  Node製の薄い接続コードのみ)に転換し、DESIGN.md「7.」を更新。
+  RPoemの既存VersionlessAPI実装・Tauri互換レイヤーを再利用する方針も
+  明記。その上で、ユーザー指定「5機能を一つずつ実装してはTESTを
+  繰り返して完成させる」を実行し、以下をRustモジュールとして実装、
+  `cargo test`で**全22件通過**を確認済み(いずれも実DB/実HTTP接続は
+  未接続、ロジック部分のみ):
+  - `src/drift.rs`(機能1: SFTPドリフト検出、5テスト)
+  - `src/versionless_api.rs`(機能2: VersionlessAPIハイブリッド、
+    バージョンレジストリ、4テスト)
+  - `src/cleanup_advisor.rs`(機能3: 不要ファイルAI削除判定支援、
+    ヒューリスティックスコアリング、5テスト)
+  - `src/dual_database.rs`(機能4: DUAL DATABASE整合性モデルの
+    状態遷移、4テスト)
+  - `src/ai_diff_advisor.rs`(機能5: AI差分解析プロンプト組み立て+
+    日英アドバイスのレスポンス分離、4テスト)
+  作業中、`target/`ビルド成果物を誤ってコミットしてしまい`.gitignore`
+  追加の上で取り消した(以後は`.gitignore`で防止済み)。
+  - 次にすべきこと: (1) 各モジュールを実際のaruaru-llm HTTP API・
+    実DB接続・実SFTP接続へ配線する(現状は純粋ロジックのみ)。
+    (2) RPoemのVersionlessAPI実装への実依存(path依存等)を追加する。
+    (3) VS Code拡張のLSPサーバー化・Node製接続コードの実装に着手する。

@@ -15,14 +15,14 @@ pub struct AruaruLlmClient {
 }
 
 #[derive(Debug, Serialize)]
-struct ChatRequest {
+struct GenerateRequest {
     prompt: String,
+    max_new_tokens: usize,
 }
 
 #[derive(Debug, Deserialize)]
-struct ChatResponse {
-    #[serde(alias = "response", alias = "text", alias = "output")]
-    text: String,
+struct GenerateResponse {
+    completion: String,
 }
 
 #[derive(Debug)]
@@ -50,14 +50,18 @@ impl AruaruLlmClient {
         }
     }
 
-    /// `/v1/chat`へプロンプトを送り、生成テキストを返す。
+    /// `/v1/generate`へプロンプトを送り、生成テキスト(`completion`)を返す。
+    /// `/v1/chat`は意図分類ベースのFAQ応答用であり、差分解析のような
+    /// 自由記述の生成には`/v1/generate`が適する(aruaru-llm側の設計方針、
+    /// `src/main.rs`のコメント参照)。
     pub async fn chat(&self, prompt: &str) -> Result<String, AruaruLlmError> {
-        let url = format!("{}/v1/chat", self.base_url.trim_end_matches('/'));
+        let url = format!("{}/v1/generate", self.base_url.trim_end_matches('/'));
         let res = self
             .http
             .post(&url)
-            .json(&ChatRequest {
+            .json(&GenerateRequest {
                 prompt: prompt.to_string(),
+                max_new_tokens: 128,
             })
             .send()
             .await
@@ -67,8 +71,8 @@ impl AruaruLlmClient {
             return Err(AruaruLlmError::UnexpectedStatus(res.status()));
         }
 
-        let body: ChatResponse = res.json().await.map_err(AruaruLlmError::Request)?;
-        Ok(body.text)
+        let body: GenerateResponse = res.json().await.map_err(AruaruLlmError::Request)?;
+        Ok(body.completion)
     }
 
     /// 差分をaruaru-llmに解析させ、日英アドバイスを取得する。

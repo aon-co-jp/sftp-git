@@ -190,3 +190,59 @@ aruaru-llmによるテスト/本番差分AIチェック、aruaru-db+PostgreSQL�
     VersionlessAPI実装への実依存はまだ未着手。(4) aruaru-db/
     PostgreSQLへの実接続テストは実サーバーが無いため未実施
     (`#[ignore]`のまま)。
+
+- **2026-08-15(続き) ローカルE2E疎通確認(ユーザー指示: 自分のPC内で
+  実サーバーを立てて検証)**:
+  - **LSP残り4機能を配線完了**: `sftpGit/detectDrift`・
+    `sftpGit/versionlessResolve`(汎用型TはJSON越しに公開できないため、
+    JSON値ベースのデモ変換レジストリとして実装、実運用ルールは次回
+    拡張)・`sftpGit/analyzeDiff`+`buildDiffPrompt`・
+    `sftpGit/dualDatabaseState`系3リクエストを追加し、
+    `cargo build --bin sftp_git_lsp`で全5機能のビルド確認済み。
+  - **DUAL DATABASE実E2E成功**: `F:\runo\aruaru-db`をローカルビルドし
+    `aruaru-server.exe --pg-port 15432`で自PC内起動(データは一時
+    ディレクトリ、`ARUARU_USERS`環境変数でSCRAM認証ユーザー設定)。
+    **重要な発見**: aruaru-dbは`SELECT 1`のようなFROM句無しSELECTを
+    サポートしない独自SQLパーサーのため、テストは`CREATE TABLE IF NOT
+    EXISTS`に変更。`dual_database_client::tests::
+    write_against_real_dual_database`が実際に自PC内aruaru-serverへの
+    書き込みに成功(`cargo test -- --ignored`で確認)。
+  - **aruaru-llm実E2E部分成功**: `F:\runo\aruaru-llm`をローカルビルド・
+    自PC内起動(`distilgpt2`モデル使用中)。HTTP往復・JSON
+    シリアライズは正常動作したが、**当初想定していた`/v1/chat`は
+    意図分類ベースのFAQ応答用エンドポイントで自由記述生成には
+    不適切**と判明し、`aruaru_llm_client.rs`を`/v1/generate`
+    (`GenerateRequest{prompt, max_new_tokens}`)へ修正。修正後、
+    HTTP接続・応答受信は成功したが、**`ai_diff_advisor`が要求する
+    「日本語見出し+英語見出し」形式でのパースには失敗**——
+    distilgpt2は指示追従(instruction following)非対応の素の
+    小型モデルのため、フォーマット指定プロンプトに従えず自由連想的な
+    テキストを返すのみだった(aruaru-llm自身も`disclosure`フィールドで
+    「商用LLMとは比較にならない」と正直に開示している既知の限界と
+    整合)。**正直な結論**: HTTP配線自体は正常だが、
+    `ai_diff_advisor`の日英2セクション形式パースは現在の
+    aruaru-llmモデル(小型GPT-2系)では実用に耐えない。次回、
+    (a)フォーマット指定を諦めてモデル出力をそのまま日本語のみ/
+    英語のみで別々に2回呼ぶ方式に変える、(b)より大きい・
+    instruction-tunedなモデルへの切り替えをaruaru-llm側に依頼する、
+    のいずれかを検討する必要がある。
+  - **SFTP実E2Eは未完了**: ローカルにWindows OpenSSH Serverが
+    無かったため、ユーザーに管理者権限での有効化
+    (`Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0`)を
+    依頼中。有効化され次第、`sftp_client.rs`の`#[ignore]`テストを
+    `127.0.0.1`向けに実行する。
+  - **VS Code拡張の実機起動確認: 成功**: `code --extensionDevelopmentPath=
+    vscode-extension --new-window`で拡張開発ホストを実起動。
+    `tasklist`で`sftp_git_lsp.exe`(release build)が拡張機能から
+    子プロセスとして実際にspawnされ、安定稼働していることを確認
+    (activate→バイナリパス解決→spawn→LanguageClient接続の一連が
+    E2Eで動作)。VS Codeウィンドウ終了時にLSPサーバープロセスも
+    連動終了し、プロセスリークが無いことも確認済み。
+  - **SFTPは引き続き保留**: ユーザーが管理者権限で
+    `Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0`を
+    実行中(インストール完了待ち)。完了後、`sftp_client.rs`の
+    `#[ignore]`テストを`127.0.0.1`向けに実行する。
+  - 次にすべきこと: (1) SFTPサーバー有効化完了後の実接続テスト
+    (最後に残った未検証項目)。(2) `ai_diff_advisor`のパース戦略
+    見直し(フォーマット指定を諦めるか、より大きい/instruction-tuned
+    なモデルへの切り替えをaruaru-llm側に依頼するか)。

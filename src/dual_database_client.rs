@@ -126,7 +126,7 @@ mod tests {
             .expect("SFTP_GIT_TEST_POSTGRES_URLを設定してください");
         let controller = DualDatabaseController::new(aruaru, postgres);
         controller
-            .write("SELECT 1")
+            .write("CREATE TABLE IF NOT EXISTS sftp_git_e2e_test (id INT)")
             .await
             .expect("実DUAL DATABASEへの書き込みに失敗");
     }

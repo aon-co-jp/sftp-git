@@ -1,0 +1,13 @@
+[package]
+name = "sftp-git"
+version = "0.0.1"
+edition = "2021"
+license = "Apache-2.0"
+description = "SFTPアップロードとGit管理を統合し、バージョンレスAPIとバージョン管理のハイブリッド運用でWEBサイト開発者の手間とミスを減らすツール(構想段階)"
+repository = "https://github.com/aon-co-jp/sftp-git"
+
+[lib]
+name = "sftp_git"
+path = "src/lib.rs"
+
+[dependencies]

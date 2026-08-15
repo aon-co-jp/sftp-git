@@ -34,8 +34,25 @@ pub struct SftpConnection {
 }
 
 impl SftpConnection {
-    /// パスワード認証で本番サーバーへ接続する。
-    /// 本番運用では鍵認証への切り替えを別途検討する(現状はパスワード認証のみ)。
+    /// 公開鍵認証で本番サーバーへ接続する(推奨、パスワードを扱わない)。
+    pub fn connect_with_private_key(
+        host: &str,
+        port: u16,
+        username: &str,
+        private_key_path: &std::path::Path,
+        public_key_path: Option<&std::path::Path>,
+    ) -> Result<Self, SftpError> {
+        let tcp = TcpStream::connect((host, port)).map_err(SftpError::Connect)?;
+        let mut session = Session::new().map_err(SftpError::Ssh)?;
+        session.set_tcp_stream(tcp);
+        session.handshake().map_err(SftpError::Ssh)?;
+        session
+            .userauth_pubkey_file(username, public_key_path, private_key_path, None)
+            .map_err(SftpError::Ssh)?;
+        Ok(Self { session })
+    }
+
+    /// パスワード認証で本番サーバーへ接続する(鍵認証が使えない場合のみ)。
     pub fn connect_with_password(
         host: &str,
         port: u16,
@@ -88,9 +105,14 @@ fn collect_manifest(
         let digest: [u8; 32] = hasher.finalize().into();
         let hash = digest.iter().map(|b| format!("{b:02x}")).collect::<String>();
 
+        // Windows sshd(実機検証で確認)はSFTPパスをバックスラッシュ区切りで
+        // 返すことがある。本番のLinuxサーバー(スラッシュ区切り)と
+        // マニフェストのキー形式を一貫させるため、区切り文字を常に`/`へ
+        // 正規化する。
         let relative = path_str
             .strip_prefix(base_dir)
             .unwrap_or(&path_str)
+            .replace('\\', "/")
             .trim_start_matches('/')
             .to_string();
         manifest.insert(relative, hash);
@@ -104,20 +126,31 @@ mod tests {
     use super::*;
 
     /// 実サーバーへの接続が必要なため既定では実行しない。
-    /// `SFTP_GIT_TEST_HOST=example.com SFTP_GIT_TEST_USER=... \
-    ///  SFTP_GIT_TEST_PASS=... cargo test -- --ignored` で手動実行する。
+    /// `SFTP_GIT_TEST_HOST=127.0.0.1 SFTP_GIT_TEST_USER=... \
+    ///  SFTP_GIT_TEST_KEY=/path/to/private_key SFTP_GIT_TEST_DIR=... \
+    ///  cargo test -- --ignored` で手動実行する(公開鍵認証、パスワード不要)。
     #[test]
     #[ignore]
     fn build_manifest_against_real_server() {
         let host = std::env::var("SFTP_GIT_TEST_HOST").expect("SFTP_GIT_TEST_HOSTを設定してください");
         let user = std::env::var("SFTP_GIT_TEST_USER").expect("SFTP_GIT_TEST_USERを設定してください");
-        let pass = std::env::var("SFTP_GIT_TEST_PASS").expect("SFTP_GIT_TEST_PASSを設定してください");
+        let key_path = std::env::var("SFTP_GIT_TEST_KEY").expect("SFTP_GIT_TEST_KEYを設定してください");
+        let remote_dir = std::env::var("SFTP_GIT_TEST_DIR").expect("SFTP_GIT_TEST_DIRを設定してください");
 
-        let conn = SftpConnection::connect_with_password(&host, 22, &user, &pass)
-            .expect("実SFTPサーバーへの接続に失敗");
+        let pub_key_path = format!("{key_path}.pub");
+        let conn = SftpConnection::connect_with_private_key(
+            &host,
+            22,
+            &user,
+            std::path::Path::new(&key_path),
+            Some(std::path::Path::new(&pub_key_path)),
+        )
+        .expect("実SFTPサーバーへの接続に失敗");
         let manifest = conn
-            .build_remote_manifest("/var/www/html")
+            .build_remote_manifest(&remote_dir)
             .expect("マニフェスト構築に失敗");
         assert!(!manifest.is_empty());
+        assert!(manifest.contains_key("sample.txt"));
+        assert!(manifest.contains_key("subdir/nested.txt"));
     }
 }

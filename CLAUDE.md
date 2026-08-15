@@ -1,12 +1,15 @@
 # 開発方針＆開発環境ルール(sftp-git)
 
-このリポジトリは構想段階(2026-08-15作成)。README.mdに記載した
-構想(SFTP×Git統合、バージョンレス/バージョン管理ハイブリッド、
-aruaru-llmによるテスト/本番差分AIチェック、aruaru-db+PostgreSQLへの
-フルバックアップ、open-directx/open-cudaによるHWアクセラレーション
-暗号化・圧縮)は、いずれも他リポジトリとの連携方式・実現可能性が
-未調査。実装を始める前に、各連携先リポジトリの現状(APIの有無、
-実装状況)を確認すること。
+📖 English: [CLAUDE-English.md](CLAUDE-English.md)
+
+2026-08-15作成。5つの中核機能(ドリフト検出・VersionlessAPIハイブリッド・
+不要ファイルAI削除判定支援・DUAL DATABASE・AI差分解析)のロジック実装+
+実サーバーでのE2E検証が完了。LSPサーバー化(`sftp_git_lsp`)+VS Code
+拡張(Node製薄層のみ、rust-analyzer方式)も実装・実機起動確認済み。
+複数AIプロバイダ対応(Claude/ChatGPT/Gemini/DeepSeek/Grok)クライアントも
+実装済みだが実APIキーでの疎通確認は未実施。現状のまとめは
+README.md「現在の状態」節、実装ログの詳細は本ファイルのHANDOFF節を
+参照。
 
 作業ドライブは`F:\runo`(全体の作業ドライブ移行状況は
 [RUNO](https://github.com/aon-co-jp/RUNO)のCLAUDE.md参照)。
@@ -289,3 +292,28 @@ aruaru-llmによるテスト/本番差分AIチェック、aruaru-db+PostgreSQL�
     みが実配線済み、複数プロバイダからの選択機能はクライアント層のみ
     実装)。(3) LSPカスタムリクエストとしてプロバイダ選択オプションを
     公開するかの検討。
+
+## 次回セッション再開メッセージ(2026-08-15セッション末尾)
+
+次回このリポジトリで作業を再開する際は、以下から着手する:
+
+1. **APIキー疎通確認(保留中)**: ユーザーがOpenAI(`info@aon.tokyo`、
+   Teamアカウント)のログイン問題を抱えており未解決のまま中断。
+   Claude/Gemini/DeepSeek/Grokは未着手。ユーザーから`.env`形式の
+   キーファイルパスを受け取ったら、`ai_providers.rs`の各プロバイダへ
+   `#[ignore]`付き実接続テストを追加し疎通確認すること。
+2. **RPoemのVersionlessAPI実装への実依存追加**: `versionless_api.rs`
+   は現状JSON値ベースのデモ変換のみ。RPoemの既存実装をpath依存として
+   取り込む設計(DESIGN.md「2.」参照)がまだ手つかず。
+3. **VS Code拡張のUI導線拡充**: 現状`cleanupAdvice`のみコマンド化
+   済み。残り4機能(detectDrift/versionlessResolve/analyzeDiff/
+   dualDatabase系)のVS Code側コマンド・UIは未実装。
+4. **マルチプラットフォーム展開**: 着手順序(VS Code拡張→デスクトップ→
+   モバイル)は確定済みだが、VS Code拡張自体がまだ検証段階(実機起動の
+   み確認、実際の開発者向け機能としての使用感はまだ)。次はVS Code
+   拡張の実用性を高めてから次段階へ進むこと。
+
+このセッションでは横断的に`aruaru-llm`(CPU+GPU同時並列稼働の実装、
+`F:\runo\aruaru-llm\CLAUDE.md`参照)・`open-cuda`(Android実機
+Vulkanベンチマーク、`F:\runo\open-cuda\CLAUDE.md`参照)にも変更を
+加えている。それぞれのリポジトリのCLAUDE.mdも合わせて確認すること。

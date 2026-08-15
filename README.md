@@ -1,9 +1,14 @@
 # sftp-git
 
+📖 English: [README-English.md](README-English.md)
+
 WEBサイト開発者向けに、**SFTPアップロードとGit管理**を統合し、
 **バージョンレスAPI**と**バージョン管理**のハイブリッド運用で、
 テストサーバーと本番環境の差分チェック・デプロイ作業の手間とミスを
-減らすことを目指すツール(構想段階、コード未実装)。
+減らすことを目指すツール。5つの中核機能(ドリフト検出・
+VersionlessAPIハイブリッド・不要ファイルAI削除判定・DUAL DATABASE・
+AI差分解析)のロジック実装+実サーバーでのE2E検証まで完了(2026-08-15)。
+LSPサーバー化・VS Code拡張(Node製薄層)も実装・実機起動確認済み。
 
 参考にした既存サービス: https://lp.smartrelease.cloud/
 
@@ -90,11 +95,42 @@ WEBサイト開発者向けに、**SFTPアップロードとGit管理**を統合
 
 実現方式レベルの検討は[DESIGN.md](DESIGN.md)にまとめている。
 
-## 現在の状態
+## 現在の状態(2026-08-15時点)
 
-構想段階。Cargoパッケージの雛形のみで、実装はまだ無い。
-上記の各連携先(aruaru-llm/aruaru-db/open-directx/open-cuda)は
-それぞれ独立したリポジトリであり、実際の連携方式は未調査・未設計。
+**5機能のロジック実装+実サーバーでのE2E検証が完了**:
+
+| 機能 | 実装 | 実サーバーE2E |
+|---|---|---|
+| SFTPドリフト検出 | `src/drift.rs`+`src/sftp_client.rs` | ✅ ローカルOpenSSH Serverで成功 |
+| VersionlessAPIハイブリッド | `src/versionless_api.rs` | (ロジックのみ、RPoem実依存は未着手) |
+| 不要ファイルAI削除判定支援 | `src/cleanup_advisor.rs` | (ロジックのみ、実削除はしない設計) |
+| DUAL DATABASE | `src/dual_database.rs`+`src/dual_database_client.rs` | ✅ ローカルaruaru-serverで書き込み成功 |
+| AI差分解析(日英) | `src/ai_diff_advisor.rs`+`src/aruaru_llm_client.rs` | ✅ 接続成功だがモデル品質は実用に耐えず(下記参照) |
+
+**LSPサーバー化+VS Code拡張**: `src/bin/sftp_git_lsp.rs`(5機能全てを
+カスタムリクエストとして公開)+`vscode-extension/`(Node製の薄い
+接続層のみ、rust-analyzer方式)。VS Code拡張ホストの実起動→LSP
+サーバーの子プロセスspawn→正常終了まで確認済み。
+
+**重要な発見(正直な開示)**: 小型GPT-2系モデル(`distilgpt2`/
+`gpt2-medium`)は指示追従非対応のため、フォーマット指定プロンプトに
+従えない。`ai_diff_advisor`は日英別プロンプトで2回呼び出す方式へ
+設計変更済み。
+
+**複数AIプロバイダ対応**: aruaru-llmに加え、Claude/ChatGPT/Gemini/
+DeepSeek/Grokを選択可能にするクライアント(`src/ai_providers.rs`)を
+実装。**実APIキーでの疎通確認は未実施**(このセッションにはいずれの
+有効なキーも無かったため)。
+
+詳細な実装ログ・実測結果はCLAUDE.mdのHANDOFF節を参照。
+
+## 未着手・次の課題
+
+- RPoemのVersionlessAPI実装への実依存追加
+- 複数AIプロバイダの実HTTP疎通確認
+- VS Code拡張の残り4機能(cleanupAdvice以外)のUI導線
+- Windows/Mac/Linuxデスクトップアプリ・Android/iOSモバイルアプリ
+  (着手順序: VS Code拡張→デスクトップ→モバイル、DESIGN.md参照)
 
 ## 関連リポジトリ
 

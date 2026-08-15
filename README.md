@@ -15,6 +15,12 @@ WEBサイト開発者向けに、**SFTPアップロードとGit管理**を統合
   身軽さと、厳密なバージョン管理の安全性の良いとこ取りを狙う。
 - **テスト/本番差分のAIチェック**: 差分検知・レビューに
   [aruaru-llm](https://github.com/aon-co-jp/aruaru-llm)を利用する構想。
+  差分解析そのものの推論を高速化するため、
+  [open-cuda](https://github.com/aon-co-jp/open-cuda)(NVIDIA GPU)と
+  DirectX互換の[open-directx](https://github.com/aon-co-jp/open-directx)
+  (CUDA非対応環境向け)をaruaru-llmのHWアクセラレーションバックエンド
+  として使い分ける。加えて、検出した差分について**日本語・英語
+  両方**でAIによる改善アドバイスを生成する機能を持たせる。
 - **不要ファイルのAI削除判定支援**: Git+VersionlessAPIで管理する
   古いソース・使われなくなったファイルについて、削除してよいか
   [aruaru-llm](https://github.com/aon-co-jp/aruaru-llm)が判断材料
@@ -26,13 +32,20 @@ WEBサイト開発者向けに、**SFTPアップロードとGit管理**を統合
   不具合が発生してももう片側がフル補完・サポートする冗長構成)を
   選択可能にする。Rust+[RPoem](https://github.com/aon-co-jp/RPoem)
   で機能追加。
-- **ハードウェアアクセラレーション**: 調査の結果、暗号化・圧縮・展開の
-  高速化には[open-raid-z](https://github.com/aon-co-jp/open-raid-z)の
-  `open_raid_z_core`(GPU/D3D12対応、[RS-SmartTCP](https://github.com/aon-co-jp/RS-SmartTCP)
-  が実際に利用中)が本命候補。当初想定していた
-  [open-directx](https://github.com/aon-co-jp/open-directx)(2D描画)・
-  [open-cuda](https://github.com/aon-co-jp/open-cuda)(LLM推論専用)は
-  この用途には合わないと判明。
+- **ハードウェアアクセラレーション(用途別に使い分け)**:
+  - 暗号化・圧縮・展開の高速化には
+    [open-raid-z](https://github.com/aon-co-jp/open-raid-z)の
+    `open_raid_z_core`(GPU/D3D12対応、
+    [RS-SmartTCP](https://github.com/aon-co-jp/RS-SmartTCP)が実際に
+    利用中)を使う。調査の結果、この用途には
+    [open-directx](https://github.com/aon-co-jp/open-directx)・
+    [open-cuda](https://github.com/aon-co-jp/open-cuda)は合わないと
+    判明したため対象外。
+  - AI差分解析・アドバイス生成(aruaru-llmの推論)の高速化には
+    [open-cuda](https://github.com/aon-co-jp/open-cuda)(NVIDIA GPU)と
+    [open-directx](https://github.com/aon-co-jp/open-directx)(DirectX
+    互換、CUDA非対応環境向け)を使い分ける。こちらは元々LLM推論向けの
+    実装であり、用途に合致する。
 
 ## 市場調査(2026-08-15)
 

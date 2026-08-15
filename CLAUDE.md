@@ -256,3 +256,36 @@ aruaru-llmによるテスト/本番差分AIチェック、aruaru-db+PostgreSQL�
     Windows版libssh2で失敗する原因の詳細調査(実運用でLinux本番
     サーバーへ接続する場合はed25519でも問題ない可能性が高いが未検証、
     このマシンのローカルWindows sshd固有の制約である可能性がある)。
+
+- **2026-08-15(続き) 複数AIプロバイダ対応を追加(ユーザー指示
+  「CLAUDEや、ChatGPTやGEMINIやDeepSeekやGrokなど有名なAIは全て対応
+  させてそれでの開発での連携も対応して」)**:
+  1. **LSP標準準拠(開発ツール連携)**: `sftp_git_lsp`は標準の
+     Language Server Protocol(標準入出力でのJSON-RPC)で実装済み
+     のため、VS Code専用ではなくLSPクライアントとして動作する任意の
+     開発ツール(Claude Code含む)と原理上連携可能——追加実装は不要
+     (既存設計がそのまま満たしている点を確認・明記したのみ)。
+  2. **複数AIプロバイダクライアント新設**(`src/ai_providers.rs`):
+     `AiProvider`列挙型(Claude/ChatGPT/Gemini/DeepSeek/Grok)+
+     `AiProviderClient::complete(prompt)`。各社API形状の違い
+     (Anthropic Messages API・OpenAI互換Chat Completions API
+     〈ChatGPT/DeepSeek/Grok共通〉・Google Gemini generateContent API)
+     を吸収し、統一インターフェースでプロンプト→生成テキストを返す。
+     APIキーは環境変数(`ANTHROPIC_API_KEY`/`OPENAI_API_KEY`/
+     `GEMINI_API_KEY`/`DEEPSEEK_API_KEY`/`XAI_API_KEY`)から読み、
+     未設定時は`AiProviderError::NotConfigured`を正直に返す
+     (黙って別プロバイダへフォールバックしない)。
+  3. **正直な開示・未検証事項**: 各社APIの実装は公開ドキュメントの
+     仕様に基づくが、**このセッションにはいずれのプロバイダの有効な
+     APIキーも無く、実際のHTTP応答での動作確認はできていない**
+     (aruaru-llmのみ自ホストのため実HTTP検証済み、CLAUDE.md該当節
+     参照)。利用時は各自のAPIキーで疎通確認が必要。
+  4. **検証結果**: `cargo test`**29件全green**(既存26件+
+     `ai_providers`新規3件、実HTTPを伴わないロジックのみのテスト)。
+  - 次にすべきこと: (1) 有効なAPIキーが得られ次第、各プロバイダの
+    実HTTP疎通確認(`#[ignore]`付き実接続テストとして追加する設計に
+    倣う)。(2) `ai_diff_advisor`/`cleanup_advisor`から
+    `AiProviderClient`を実際に呼べるよう配線(現状はaruaru-llm経由の
+    みが実配線済み、複数プロバイダからの選択機能はクライアント層のみ
+    実装)。(3) LSPカスタムリクエストとしてプロバイダ選択オプションを
+    公開するかの検討。

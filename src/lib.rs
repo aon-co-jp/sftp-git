@@ -4,6 +4,7 @@
 //! 各機能は独立したモジュールとして1つずつ実装・テストしていく方針。
 
 pub mod ai_diff_advisor;
+pub mod ai_providers;
 pub mod aruaru_llm_client;
 pub mod cleanup_advisor;
 pub mod drift;

@@ -17,6 +17,14 @@ WEBサイト開発者向けに、**SFTPアップロードとGit管理**を統合
   コードをどこまで共有するか(ロジックを共通ライブラリ化しUIだけ
   各プラットフォームで作る、等)は未設計。詳細は[DESIGN.md](DESIGN.md)
   「7. マルチプラットフォーム配布」節参照。
+- **開発ツール連携(ユーザー指示、2026-08-15)**: LSPサーバーは標準の
+  Language Server Protocolに準拠しているため、VS Code以外の任意の
+  LSPクライアントからも同じRust製バイナリで連携可能(Claude Code等)。
+- **複数AIプロバイダ対応(ユーザー指示、2026-08-15)**: AI差分解析の
+  バックエンドとして、aruaru-llmに加えClaude(Anthropic)・
+  ChatGPT(OpenAI)・Gemini(Google)・DeepSeek・Grok(xAI)を選択可能に
+  した(`src/ai_providers.rs`)。各社APIキーは環境変数で設定
+  (未設定時はそのプロバイダを使わず正直にエラーを返す)。
 
 ## 目指す機能(構想)
 

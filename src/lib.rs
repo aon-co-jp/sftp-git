@@ -1,3 +1,6 @@
-//! sftp-git: SFTP UPLOADとGit管理を統合するハイブリッド運用ツール(構想段階、未実装)
+//! sftp-git: SFTP UPLOADとGit管理を統合するハイブリッド運用ツール
 //!
-//! 詳細な構想・要件はREADME.md/CLAUDE.mdを参照。
+//! 詳細な構想・要件はREADME.md/DESIGN.md/CLAUDE.mdを参照。
+//! 各機能は独立したモジュールとして1つずつ実装・テストしていく方針。
+
+pub mod drift;

@@ -137,31 +137,35 @@ PostgreSQLを追加し、**DUAL DATABASE構成**にする。
 Android(スマホ・タブレット)/iPhone/iPadのモバイルアプリという
 **6プラットフォーム**を配布対象とする。
 
-**現時点での懸念点(正直に記載)**: これは骨組み実装段階の当リポジトリの
-現状(Cargo雛形のみ)から見ると非常に大きなスコープであり、以下は
-すべて未検討:
-- VS Code拡張機能はTypeScript/JavaScript(VS Code Extension API)が
-  前提だが、それ以外のプラットフォームはRust(このリポジトリの既定言語、
-  他aon-co-jpリポジトリとの一貫性)を軸にする想定。**言語をまたぐ
-  コア機能の共有方法**(例: Rustコアをネイティブモジュール化してVS Code
-  拡張からFFI/N-API経由で呼ぶ、等)は未設計。
-- モバイル(Android/iOS)でSFTPアップロード・Git操作・DUAL DATABASE
-  接続をどこまでサポートするか(閲覧・承認操作のみに絞る案もあり得る)は
-  未確定。
+**言語方針(ユーザー確定、2026-08-15)**: Rustを中心に据え、Node.jsは
+使わない。ただしVS Code拡張機能は仕組み上、拡張ホスト自体がNode.js
+必須のため完全排除は不可能——**rust-analyzer方式**を採用する:
+業務ロジックは全てRustで実装しLSP(Language Server Protocol)サーバー
+として動かす。VS Code側はNode製の**薄い接続コードのみ**(LSPクライアント
+起動と標準入出力の中継のみで、業務ロジックは一切持たない)。
+
+**RPoemの再利用(ユーザー指定、2026-08-15)**: [RPoem](https://github.com/aon-co-jp/RPoem)
+は既にVersionlessAPIをPure Rustで実装済み(GraphQL Federation基盤、
+Tauri互換のデスクトップアプリ実装もNode非依存で保有)。
+- 2節「VersionlessAPI×バージョン管理ハイブリッド」は、ゼロから実装
+  せずRPoemの既存VersionlessAPI実装を土台にする。
+- デスクトップアプリ(段階2)は、RPoemが自前実装しているTauri互換
+  レイヤーを使い、Node非依存でWindows/Mac/Linux対応を狙う。
+
 **着手順序(ユーザー確定、2026-08-15)**:
-1. **VS Code拡張機能**でSFTPドリフト検出・AI差分解析・不要ファイル
-   削除判定支援などの中核機能を先行検証する。
-2. 検証が済んだ中核ロジックを土台に、**Windows/Mac/Linuxの
-   デスクトップアプリ**へ展開する。
+1. **VS Code拡張機能**(rust-analyzer方式のLSPサーバー)でSFTP
+   ドリフト検出・VersionlessAPIハイブリッド(RPoem活用)・不要ファイル
+   AI削除判定・DUAL DATABASE・AI差分解析の**5機能を1つずつ実装しては
+   テストする、を繰り返して完成させる**(ユーザー指定の進め方)。
+2. 検証が済んだ中核ロジック(LSPサーバーのRustコア)を土台に、
+   RPoemのTauri互換レイヤーで**Windows/Mac/Linuxのデスクトップアプリ**
+   へ展開する。
 3. 最後に**Android(スマホ・タブレット)/iPhone/iPad向けモバイルアプリ**
    へ展開する(閲覧・承認操作中心になる可能性が高いが、対応範囲は
    デスクトップ版の実装状況を見て改めて判断する)。
 
-**未解決点(段階1着手前に詰める必要あり)**:
-- VS Code拡張機能(TypeScript/JavaScript)とRustコアの共有方法
-  (Rustコアをネイティブモジュール化しFFI/N-API経由で呼ぶ案が有力だが
-  未設計)。
-- 段階1(VS Code拡張機能)でDESIGN.mdの1〜5節(ドリフト検出・
-  VersionlessAPIハイブリッド・不要ファイルAI削除判定・DUAL DATABASE・
-  AI差分解析)のうち、どこまでを検証スコープに含めるか
-  (全部は大きすぎる可能性があり、絞り込みが要る)。
+**未解決点**:
+- VS Code側のNode接続コード(LSPクライアント起動部分)の実装は
+  段階1の後半(Rustコア側の5機能が一通り揃ってから)に着手する。
+- RPoemのVersionlessAPI実装をどう依存として取り込むか
+  (path依存 or 別クレート化)は次回精査する。

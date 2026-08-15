@@ -14,9 +14,10 @@ aruaru-llmによるテスト/本番差分AIチェック、aruaru-db+PostgreSQL�
 ## HANDOFF
 
 - **2026-08-15 新規作成**: ユーザー指示によりGitHub
-  `aon-co-jp/sftp-git`として新規作成(当初リポジトリ名
-  `open-smart-relrase-u`→`open-smart-release-u`→ユーザー指示で
-  `sftp-git`に変更)。Cargo雛形(`Cargo.toml`/`src/lib.rs`)と
+  `aon-co-jp/sftp-git`として新規作成。リポジトリ名の変遷は
+  当初`open-smart-relrase-u`(スペルミス)→ユーザー訂正で
+  `open-smart-release-u`→ユーザー指示で最終的に`sftp-git`に改名。
+  Cargo雛形(`Cargo.toml`/`src/lib.rs`)と
   README.md/CLAUDE.md/PORTING.mdのみ作成し、実装は未着手。
   - 次にすべきこと: (1) aruaru-llmの既存APIでテスト/本番差分チェックが
     どこまで転用できるか調査。(2) SFTP×Git統合の既存OSS実装の

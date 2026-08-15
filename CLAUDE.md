@@ -238,11 +238,21 @@ aruaru-llmによるテスト/本番差分AIチェック、aruaru-db+PostgreSQL�
     (activate→バイナリパス解決→spawn→LanguageClient接続の一連が
     E2Eで動作)。VS Codeウィンドウ終了時にLSPサーバープロセスも
     連動終了し、プロセスリークが無いことも確認済み。
-  - **SFTPは引き続き保留**: ユーザーが管理者権限で
-    `Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0`を
-    実行中(インストール完了待ち)。完了後、`sftp_client.rs`の
-    `#[ignore]`テストを`127.0.0.1`向けに実行する。
-  - 次にすべきこと: (1) SFTPサーバー有効化完了後の実接続テスト
-    (最後に残った未検証項目)。(2) `ai_diff_advisor`のパース戦略
-    見直し(フォーマット指定を諦めるか、より大きい/instruction-tuned
-    なモデルへの切り替えをaruaru-llm側に依頼するか)。
+  - **SFTP実接続テスト: 成功(2026-08-15)**: ユーザーが管理者権限で
+    Windows OpenSSH Serverを有効化。ed25519鍵はWindows版libssh2で
+    認証コールバックが失敗(`Session(-19) Callback returned error`)し、
+    **PEM形式RSA鍵(`ssh-keygen -m PEM`)でのみ認証成功**という実装依存の
+    制約を発見。`sftp_client.rs`に`connect_with_private_key`
+    (公開鍵認証、パスワードを扱わない設計)を追加。また、Windows sshdは
+    SFTPパスをバックスラッシュ区切りで返すため、`collect_manifest`に
+    `\`→`/`正規化を追加(本番Linuxサーバーとのマニフェストキー形式一貫性
+    のため)。`sftp_client::tests::build_manifest_against_real_server`が
+    実際にローカルOpenSSH Serverへ接続しファイル一覧・ハッシュ取得まで
+    成功することを確認。これで5機能すべての実サーバーE2E検証が完了
+    (DUAL DATABASE・aruaru-llm・LSPサーバー・VS Code拡張・SFTP)。
+  - 次にすべきこと: (1) `ai_diff_advisor`のパース戦略見直し
+    (フォーマット指定を諦めるか、より大きい/instruction-tunedなモデル
+    への切り替えをaruaru-llm側に依頼するか)。(2) ed25519鍵が
+    Windows版libssh2で失敗する原因の詳細調査(実運用でLinux本番
+    サーバーへ接続する場合はed25519でも問題ない可能性が高いが未検証、
+    このマシンのローカルWindows sshd固有の制約である可能性がある)。

@@ -5,4 +5,5 @@
 
 pub mod cleanup_advisor;
 pub mod drift;
+pub mod dual_database;
 pub mod versionless_api;

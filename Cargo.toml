@@ -11,6 +11,8 @@ name = "sftp_git"
 path = "src/lib.rs"
 
 [dependencies]
+open-runo-versionless-api = { path = "../RPoem/crates/open-runo-versionless-api" }
+open-runo-rustjson = { path = "../RPoem/crates/open-runo-rustjson" }
 lsp-server = "0.10.0"
 lsp-types = "0.97.0"
 reqwest = { version = "0.13.4", features = ["json"] }

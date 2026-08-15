@@ -317,3 +317,23 @@ README.md「現在の状態」節、実装ログの詳細は本ファイルのHA
 `F:\runo\aruaru-llm\CLAUDE.md`参照)・`open-cuda`(Android実機
 Vulkanベンチマーク、`F:\runo\open-cuda\CLAUDE.md`参照)にも変更を
 加えている。それぞれのリポジトリのCLAUDE.mdも合わせて確認すること。
+
+## 追記(再開セッション、2026-08-15) RPoemのVersionlessAPI実装への実依存追加(次回再開メッセージ項目2を完了)
+
+`Cargo.toml`に`open-runo-versionless-api`+`open-runo-rustjson`
+(いずれもRPoemへのpath依存)を追加。`src/versionless_api.rs`に
+`json_registry::JsonVersionRegistry`を新設し、RPoemの
+`CompatibilityRule`/`apply_compatibility`をそのまま呼ぶ薄いラッパーを
+実装(ゼロから作らず既存実装を活用、という当初方針をようやく実行)。
+**ユーザー指摘で発覚した見落とし**: 当初`serde_json`を直接使う設計に
+していたが、「RS-JSONじゃないの？」という指摘を受け調査したところ、
+RustJSON(`open-runo-rustjson`)自体が「値モデルとして
+`serde_json::Value`を採用する寛容パーサー」という設計(別の型では
+なく`serde_json::Value`を生成するパーサー)であることが判明——
+今回のコードは外部文字列をパースする箇所が無いため実害は無かったが、
+将来外部JSON文字列をパースする箇所ができた場合は
+`open_runo_rustjson::parse`を使うべき旨をコードコメントに明記した。
+検証: `cargo test`**32件全green**(既存29件+`json_registry`新規3件)。
+- 次にすべきこと: (1) VS Code拡張のUI導線拡充(残り4機能)、
+  (2) APIキー疎通確認(OpenAIログイン問題は保留中のまま)、
+  (3) マルチプラットフォーム展開の次段階。

@@ -1,13 +1,110 @@
 //! VersionlessAPI×バージョン管理のハイブリッド。DESIGN.md「2.」参照。
 //!
-//! ゼロから実装せず、RPoem(https://github.com/aon-co-jp/RPoem)が
-//! 既に持つVersionlessAPI実装(Stripe方式: 現行の正規スキーマ+過去
-//! バージョンへの変換トランスフォーマー)の考え方を土台にする。
-//! ここでは、sftp-git側で必要な「バージョン別レスポンス変換」の
-//! 最小限のフレームワーク部分のみを実装する(RPoem本体への実依存は
-//! 未接続、次回精査)。
+//! 2026-08-15、RPoem(https://github.com/aon-co-jp/RPoem)の
+//! `open-runo-versionless-api`crateへ実依存を追加した(path依存)。
+//! RPoem側はフィールド単位の互換性ルール
+//! (`CompatibilityRule::RenamedField`/`RemovedFieldDefault`/
+//! `Deprecated`)を`serde_json::Value`に適用する`apply_compatibility`を
+//! 提供する——これがStripe方式(現行の正規実装+過去バージョンへの
+//! 変換)の実体。本モジュールの`VersionRegistry<T>`(型付きバージョン別
+//! 変換関数の登録)は、内部でRPoemの`apply_compatibility`を呼ぶ
+//! `json_registry`サブモジュールと併用する想定。
 
 use std::collections::BTreeMap;
+
+/// RPoemの`open-runo-versionless-api`を使った、JSON値ベースの
+/// バージョン変換レジストリ。フィールドのリネーム・削除時デフォルト
+/// 値補完・非推奨マーキングという3種類の互換性ルールを、バージョン
+/// ごとに登録する。
+///
+/// **RustJSON(`open-runo-rustjson`/`RS-JSON`)との関係**: RustJSON自体は
+/// 「値モデルとして`serde_json::Value`をそのまま採用する寛容パーサー」
+/// という設計(RustJSON側のdocコメントに明記)であり、`serde_json::Value`
+/// を置き換える別の型ではない。本モジュールは外部文字列を直接パースする
+/// 箇所を持たないため`serde_json::json!`で値を組み立てているが、
+/// **将来HTTPリクエストボディ等、外部から受け取ったJSON文字列を
+/// パースする箇所を追加する場合は、`serde_json::from_str`ではなく
+/// `open_runo_rustjson::parse`を使うこと**(このエコシステム全体の
+/// 既定ルール、RPoem CLAUDE.md参照)。
+pub mod json_registry {
+    use open_runo_versionless_api::{apply_compatibility, CompatibilityRule};
+    use std::collections::BTreeMap;
+
+    pub struct JsonVersionRegistry {
+        rules: BTreeMap<String, Vec<CompatibilityRule>>,
+    }
+
+    impl JsonVersionRegistry {
+        pub fn new() -> Self {
+            Self {
+                rules: BTreeMap::new(),
+            }
+        }
+
+        /// 指定バージョン向けの互換性ルール群を登録する。
+        pub fn register(&mut self, version: impl Into<String>, rules: Vec<CompatibilityRule>) {
+            self.rules.insert(version.into(), rules);
+        }
+
+        /// 現行スキーマのJSON値を、リクエストされたバージョン向けへ
+        /// 変換する。該当バージョンの登録が無ければ無変換のまま返す
+        /// (versionless、変換不要という意味)。
+        pub fn resolve(
+            &self,
+            current: serde_json::Value,
+            requested_version: Option<&str>,
+        ) -> serde_json::Value {
+            match requested_version.and_then(|v| self.rules.get(v)) {
+                Some(rules) => apply_compatibility(current, rules),
+                None => current,
+            }
+        }
+    }
+
+    impl Default for JsonVersionRegistry {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use serde_json::json;
+
+        #[test]
+        fn no_version_requested_returns_current_shape_unchanged() {
+            let registry = JsonVersionRegistry::new();
+            let current = json!({ "user_id": "u_1" });
+            assert_eq!(registry.resolve(current.clone(), None), current);
+        }
+
+        #[test]
+        fn renames_field_back_for_a_registered_legacy_version() {
+            let mut registry = JsonVersionRegistry::new();
+            registry.register(
+                "2020-01-01",
+                vec![CompatibilityRule::RenamedField {
+                    old_name: "userId".to_string(),
+                    new_name: "user_id".to_string(),
+                }],
+            );
+            let current = json!({ "user_id": "u_1" });
+            let legacy = registry.resolve(current, Some("2020-01-01"));
+            assert_eq!(legacy["userId"], "u_1");
+        }
+
+        #[test]
+        fn unregistered_version_falls_back_to_current_shape() {
+            let registry = JsonVersionRegistry::new();
+            let current = json!({ "user_id": "u_1" });
+            assert_eq!(
+                registry.resolve(current.clone(), Some("1999-01-01")),
+                current
+            );
+        }
+    }
+}
 
 /// 日付ベースのAPIバージョン(例: "2026-08-15")。
 pub type ApiVersion = String;

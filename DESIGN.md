@@ -45,6 +45,20 @@ Stripe方式(現行の正規実装+過去バージョンへの変換トランス
 現時点でどちらを指しているか未確定——次回、利用シーンを一つに
 絞り込む必要がある。
 
+**RPoem実依存を追加(2026-08-15)**: `src/versionless_api.rs`に
+RPoem(`open-runo-versionless-api`、path依存)を使った
+`json_registry::JsonVersionRegistry`を実装。RPoemの
+`CompatibilityRule`(`RenamedField`/`RemovedFieldDefault`/`Deprecated`)+
+`apply_compatibility`をそのまま呼ぶ薄いラッパーで、バージョンごとの
+ルール登録→JSON値の変換という骨格自体はRPoem側の実装をそのまま活用
+している。既存の型付き`VersionRegistry<T>`(構想段階のデモ実装)と
+併存させ、実運用ではJSON値ベースの`json_registry`を使う想定。
+`open-runo-rustjson`(RS-JSON)も依存として追加済み——現状は外部文字列を
+パースする箇所が無いため未使用だが、将来HTTPリクエストボディ等の
+外部JSON文字列をパースする箇所を追加する際は`serde_json::from_str`
+ではなく`open_runo_rustjson::parse`を使うこと(エコシステム全体の
+既定ルール)。テスト7件全green(既存4件+json_registry新規3件)。
+
 ## 3. 不要ファイルのAI削除判定支援(aruaru-llm連携)
 
 **判断材料として提示する項目案**(削除の可否はAIが決定せず、

@@ -334,6 +334,36 @@ RustJSON(`open-runo-rustjson`)自体が「値モデルとして
 将来外部JSON文字列をパースする箇所ができた場合は
 `open_runo_rustjson::parse`を使うべき旨をコードコメントに明記した。
 検証: `cargo test`**32件全green**(既存29件+`json_registry`新規3件)。
-- 次にすべきこと: (1) VS Code拡張のUI導線拡充(残り4機能)、
+
+## 追記(再開セッション、2026-08-15) VS Code拡張のUI導線を残り4機能に拡充(次回再開メッセージ項目3を完了)
+
+`vscode-extension/src/extension.ts`に5コマンドを追加し、LSPサーバーの
+5機能全てにコマンドパレット経由のUI導線が揃った:
+- `sftpGit.detectDrift` — Git/サーバー両マニフェストをJSON貼り付け
+  形式(`showInputBox`)で受け取り、ドリフト結果を出力パネルへ表示。
+- `sftpGit.versionlessResolve` — 現行スキーマJSON+変換先バージョンを
+  入力し、RPoemの`CompatibilityRule`経由の変換結果を表示。
+- `sftpGit.analyzeDiff` — アクティブエディタの選択範囲(または全文)を
+  差分テキストとしてaruaru-llmへ送り、日英アドバイスを出力パネルへ
+  表示(小型モデルでは数十秒かかる旨を事前に通知)。
+- `sftpGit.dualDatabaseState`/`dualDatabaseOnPrimaryFailureDetected`/
+  `dualDatabaseOnRecoveredAndResynced` — DUAL DATABASE状態の確認・
+  障害通知・復旧通知。
+`package.json`の`contributes.commands`に7コマンド全てを登録
+(コマンドパレットから検索・実行可能に)。
+
+**業務ロジックは一切追加していない**(既存方針通り、パラメータの
+受け渡しとLSPリクエスト送信のみ、判定・変換ロジックはRust側のまま)。
+
+**検証**: `npx tsc -p ./`でコンパイルエラー0件。VS Code拡張ホストを
+実起動し、`sftp_git_lsp.exe`が子プロセスとして正常にspawn・終了する
+ことを再確認(既存の検証手順を再実行、UI追加による副作用が無いことを
+確認)。**正直な開示**: 各コマンドを実際にクリックしてダイアログ
+入力→結果表示まで一気通貫でテストするところまでは今回行っていない
+(拡張ホストの起動・LSPサーバーのspawnまでの確認に留まる)——次回、
+実際にVS Code UIを操作してのE2E確認が望ましい。
+
+- 次にすべきこと: (1) 各コマンドの実際のクリック操作によるE2E確認、
   (2) APIキー疎通確認(OpenAIログイン問題は保留中のまま)、
-  (3) マルチプラットフォーム展開の次段階。
+  (3) マルチプラットフォーム展開の次段階、(4) より豊かなUI
+  (Webview等)への発展の検討。

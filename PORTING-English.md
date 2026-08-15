@@ -27,15 +27,18 @@ not require depending on the whole `sftp_git` crate):
 
 ## Dependency repositories (sibling path dependencies)
 
-This repository is expected to depend on the following as path
-dependencies (currently only the aruaru-llm HTTP client is actually
-wired up; the rest are still at the design stage):
+This repository depends on the following (a mix of already-wired and
+still-planned):
 
 - [aruaru-llm](https://github.com/aon-co-jp/aruaru-llm) — via HTTP
   (`src/aruaru_llm_client.rs`; an HTTP API client, not a path
-  dependency)
-- [RPoem](https://github.com/aon-co-jp/RPoem) — intended reuse of its
-  VersionlessAPI implementation (not started)
+  dependency; already wired up)
+- [RPoem](https://github.com/aon-co-jp/RPoem) — **wired up as a real
+  path dependency (2026-08-15)**: `open-runo-versionless-api`
+  (`CompatibilityRule` / `apply_compatibility`, used from
+  `src/versionless_api.rs::json_registry`) and `open-runo-rustjson`
+  (RS-JSON; not used yet, but added as a dependency for future
+  external-JSON-string parsing).
 - [open-raid-z](https://github.com/aon-co-jp/open-raid-z) —
   hardware-accelerated encryption/compression via `open_raid_z_core`
   (not started)

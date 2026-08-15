@@ -115,16 +115,20 @@ verification completed:**
 | Feature | Implementation | Real-server E2E |
 |---|---|---|
 | SFTP drift detection | `src/drift.rs` + `src/sftp_client.rs` | ✅ Succeeded against a local OpenSSH Server |
-| Versionless API hybrid | `src/versionless_api.rs` | (logic only; real dependency on RPoem not yet done) |
+| Versionless API hybrid | `src/versionless_api.rs` (now backed by RPoem's `open-runo-versionless-api` as a real path dependency) | (logic only, real-server not applicable) |
 | AI-assisted stale-file deletion advice | `src/cleanup_advisor.rs` | (logic only; by design never deletes) |
 | Dual database | `src/dual_database.rs` + `src/dual_database_client.rs` | ✅ Succeeded writing to a local aruaru-server |
 | AI diff analysis (JA/EN) | `src/ai_diff_advisor.rs` + `src/aruaru_llm_client.rs` | ✅ Connected successfully, but current model quality is not production-ready (see below) |
 
 **LSP server + VS Code extension**: `src/bin/sftp_git_lsp.rs` exposes
 all 5 features as custom LSP requests. `vscode-extension/` is a thin
-Node.js connection layer only (rust-analyzer pattern). Verified that
-the VS Code extension host launches, spawns the LSP server as a child
-process, and shuts down cleanly.
+Node.js connection layer only (rust-analyzer pattern). **All 5
+features now have a command-palette UI** (as of 2026-08-15):
+`sftpGit.cleanupAdvice` / `sftpGit.detectDrift` /
+`sftpGit.versionlessResolve` / `sftpGit.analyzeDiff` /
+`sftpGit.dualDatabaseState` and 2 related dual-database commands.
+Verified that the VS Code extension host launches, spawns the LSP
+server as a child process, and shuts down cleanly.
 
 **Important finding (disclosed honestly)**: small GPT-2-family models
 (`distilgpt2` / `gpt2-medium`) are not instruction-tuned and cannot
@@ -143,12 +147,13 @@ and measured results.
 
 ## Not yet started / next steps
 
-- Add a real dependency on RPoem's versionless-API implementation.
-- Verify real HTTP connectivity for each AI provider.
-- Wire up UI affordances in the VS Code extension for the remaining 4
-  features (only `cleanupAdvice` has one so far).
+- Verify real HTTP connectivity for each AI provider (requires a
+  valid API key).
 - Windows/Mac/Linux desktop apps and Android/iOS mobile apps (planned
   order: VS Code extension → desktop → mobile; see DESIGN.md).
+- The VS Code extension's UI is currently `showInputBox`-based
+  (paste JSON, type a version string); a richer UI (e.g. a Webview)
+  is a future improvement to consider.
 
 ## Related repositories
 

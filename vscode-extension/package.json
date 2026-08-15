@@ -9,6 +9,38 @@
   "categories": ["Other"],
   "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sftpGit.cleanupAdvice",
+        "title": "sftp-git: 不要ファイルAI削除判定支援 (Cleanup Advice)"
+      },
+      {
+        "command": "sftpGit.detectDrift",
+        "title": "sftp-git: SFTPドリフト検出 (Detect Drift)"
+      },
+      {
+        "command": "sftpGit.versionlessResolve",
+        "title": "sftp-git: VersionlessAPI変換 (Versionless Resolve)"
+      },
+      {
+        "command": "sftpGit.analyzeDiff",
+        "title": "sftp-git: AI差分解析 (Analyze Diff)"
+      },
+      {
+        "command": "sftpGit.dualDatabaseState",
+        "title": "sftp-git: DUAL DATABASE状態確認 (Dual Database State)"
+      },
+      {
+        "command": "sftpGit.dualDatabaseOnPrimaryFailureDetected",
+        "title": "sftp-git: DUAL DATABASE主系障害を通知 (Dual Database: Report Primary Failure)"
+      },
+      {
+        "command": "sftpGit.dualDatabaseOnRecoveredAndResynced",
+        "title": "sftp-git: DUAL DATABASE復旧・再同期を通知 (Dual Database: Report Recovered)"
+      }
+    ]
+  },
   "scripts": {
     "compile": "tsc -p ./"
   },

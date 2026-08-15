@@ -25,12 +25,15 @@ Rustモジュールを`path`依存として個別に再利用できる設計に�
 
 ## 依存先リポジトリ(sibling path依存)
 
-このリポジトリ自身が以下をpath依存として利用する想定(現時点では
-`aruaru-llm`のHTTPクライアントのみ実配線、他は構想段階):
+このリポジトリ自身が以下を利用する(現時点で実配線済みのものと
+構想段階のものが混在):
 
 - [aruaru-llm](https://github.com/aon-co-jp/aruaru-llm) — HTTP経由
-  (`src/aruaru_llm_client.rs`、path依存ではなくHTTP API利用)
-- [RPoem](https://github.com/aon-co-jp/RPoem) — VersionlessAPI実装の
-  再利用を想定(未着手)
+  (`src/aruaru_llm_client.rs`、path依存ではなくHTTP API利用、実配線済み)
+- [RPoem](https://github.com/aon-co-jp/RPoem) — **path依存として実配線済み
+  (2026-08-15)**。`open-runo-versionless-api`(`CompatibilityRule`/
+  `apply_compatibility`、`src/versionless_api.rs::json_registry`から
+  利用)・`open-runo-rustjson`(RS-JSON、現状未使用だが将来の外部JSON
+  文字列パース用に依存追加済み)。
 - [open-raid-z](https://github.com/aon-co-jp/open-raid-z) —
   `open_raid_z_core`によるHWアクセラレーション暗号化・圧縮(未着手)

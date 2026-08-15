@@ -109,7 +109,10 @@ LSPサーバー化・VS Code拡張(Node製薄層)も実装・実機起動確認�
 
 **LSPサーバー化+VS Code拡張**: `src/bin/sftp_git_lsp.rs`(5機能全てを
 カスタムリクエストとして公開)+`vscode-extension/`(Node製の薄い
-接続層のみ、rust-analyzer方式)。VS Code拡張ホストの実起動→LSP
+接続層のみ、rust-analyzer方式)。**5機能全てにコマンドパレット経由の
+UI導線を実装済み**(2026-08-15、`sftpGit.cleanupAdvice`/
+`sftpGit.detectDrift`/`sftpGit.versionlessResolve`/`sftpGit.analyzeDiff`/
+`sftpGit.dualDatabaseState`系3コマンド)。VS Code拡張ホストの実起動→LSP
 サーバーの子プロセスspawn→正常終了まで確認済み。
 
 **重要な発見(正直な開示)**: 小型GPT-2系モデル(`distilgpt2`/
@@ -124,13 +127,18 @@ DeepSeek/Grokを選択可能にするクライアント(`src/ai_providers.rs`)�
 
 詳細な実装ログ・実測結果はCLAUDE.mdのHANDOFF節を参照。
 
+**RPoem実依存**: `src/versionless_api.rs`にRPoem
+(`open-runo-versionless-api`、path依存)の`CompatibilityRule`/
+`apply_compatibility`を使った`json_registry::JsonVersionRegistry`を
+実装済み。
+
 ## 未着手・次の課題
 
-- RPoemのVersionlessAPI実装への実依存追加
-- 複数AIプロバイダの実HTTP疎通確認
-- VS Code拡張の残り4機能(cleanupAdvice以外)のUI導線
+- 複数AIプロバイダの実HTTP疎通確認(有効なAPIキーが必要)
 - Windows/Mac/Linuxデスクトップアプリ・Android/iOSモバイルアプリ
   (着手順序: VS Code拡張→デスクトップ→モバイル、DESIGN.md参照)
+- VS Code拡張のUI(現状は`showInputBox`によるJSON貼り付け形式、
+  もう少しリッチなUI〈Webview等〉への発展は今後の検討課題)
 
 ## 関連リポジトリ
 

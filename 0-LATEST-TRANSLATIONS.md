@@ -18,6 +18,21 @@ Japanese and English are always the newest. Other languages are not translated e
 - العربية / ar: not yet / まだ
 - فارسی / fa: not yet / まだ
 
+## CLAUDE.md
+
+- 日本語 / ja: 2026-11-26 (latest)
+- English / en: not yet / まだ
+- 简体中文 / zh-Hans: not yet / まだ
+- 繁體中文 / zh-Hant: not yet / まだ
+- 한국어 / ko: not yet / まだ
+- Deutsch / de: not yet / まだ
+- Français / fr: not yet / まだ
+- Español / es: not yet / まだ
+- Português / pt: not yet / まだ
+- Русский / ru: not yet / まだ
+- العربية / ar: not yet / まだ
+- فارسی / fa: not yet / まだ
+
 ## PORTING-English.md
 
 - 日本語 / ja: - (latest)
@@ -33,10 +48,40 @@ Japanese and English are always the newest. Other languages are not translated e
 - العربية / ar: not yet / まだ
 - فارسی / fa: not yet / まだ
 
+## PORTING.md
+
+- 日本語 / ja: 2026-11-26 (latest)
+- English / en: not yet / まだ
+- 简体中文 / zh-Hans: not yet / まだ
+- 繁體中文 / zh-Hant: not yet / まだ
+- 한국어 / ko: not yet / まだ
+- Deutsch / de: not yet / まだ
+- Français / fr: not yet / まだ
+- Español / es: not yet / まだ
+- Português / pt: not yet / まだ
+- Русский / ru: not yet / まだ
+- العربية / ar: not yet / まだ
+- فارسی / fa: not yet / まだ
+
 ## README-English.md
 
 - 日本語 / ja: - (latest)
 - English / en: (file)
+- 简体中文 / zh-Hans: not yet / まだ
+- 繁體中文 / zh-Hant: not yet / まだ
+- 한국어 / ko: not yet / まだ
+- Deutsch / de: not yet / まだ
+- Français / fr: not yet / まだ
+- Español / es: not yet / まだ
+- Português / pt: not yet / まだ
+- Русский / ru: not yet / まだ
+- العربية / ar: not yet / まだ
+- فارسی / fa: not yet / まだ
+
+## README.md
+
+- 日本語 / ja: 2026-11-26 (latest)
+- English / en: not yet / まだ
 - 简体中文 / zh-Hans: not yet / まだ
 - 繁體中文 / zh-Hant: not yet / まだ
 - 한국어 / ko: not yet / まだ

@@ -149,3 +149,8 @@ Rustモジュールを`path`依存として個別に再利用できる設計に�
 - **WASM по-прежнему остаётся технологией для интерфейса.** Изменилось лишь то, что вызываемый им API теперь построен на Connect.
 - Интерфейсы, форма которых задана внешним стандартом (ACME, обратные вызовы OAuth, вебхуки сторонних сервисов, проверки работоспособности, статические файлы, OTLP), остаются обычным HTTP.
 - **Если есть сомнения — выбирайте Connect.**
+
+
+## 2026-11-26 x-tenant と呼び出し側のConnect化 / x-tenant and Connect callers
+**日本語**: aruaru-llm の呼び出しを Connect の `Llm/Generate` に移し、`x-tenant: sftp-git` を付けました(`aa38af1`、既定ブランチは master)。試験32件成功。VPSでは動いていません。
+**English**: The aruaru-llm call moved to Connect `Llm/Generate` with `x-tenant: sftp-git` (`aa38af1`, default branch master). 32 tests pass. Not running on the VPS.
